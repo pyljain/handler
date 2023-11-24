@@ -1,5 +1,11 @@
 # Handler
 
+
+```sh
+export OPENAI_API_KEY=[YOUR-KEY]
+```
+
+
 Bring the proxy up
 
 ```sh
