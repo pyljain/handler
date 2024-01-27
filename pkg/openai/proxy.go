@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 	"net/url"
+	"time"
 )
 
 const (
@@ -20,6 +21,8 @@ type OpenAIProxy struct {
 }
 
 func (p *OpenAIProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	userRequestStart := time.Now()
 
 	// ***TODO: Please make sure to check the request path to only support the ones allowlisted for the company.
 	// Exclude DALL-E and Assistants API, fine tuning etc.****
@@ -45,7 +48,9 @@ func (p *OpenAIProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	llmCallStartTime := time.Now()
 	proxy.ServeHTTP(rec, r)
+	llmProcessingTimeTaken := time.Since(llmCallStartTime)
 
 	// Copying the response buffer for inspection and handling as needed
 	var newBuffer bytes.Buffer
@@ -69,7 +74,13 @@ func (p *OpenAIProxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	for k, v := range rec.Header() {
 		w.Header().Add(k, v[0])
 	}
+	userRequestTotalTime := time.Since(userRequestStart)
+	w.Header().Add("X-R2D2-TOTAL-TIME-TAKEN", fmt.Sprintf("%f", userRequestTotalTime.Seconds()))
+	w.Header().Add("X-R2D2-LLM-PROCESSING-TIME", fmt.Sprintf("%f", llmProcessingTimeTaken.Seconds()))
+	w.Header().Add("X-R2D2-PROXY-PROCESSING-TIME", fmt.Sprintf("%f", userRequestTotalTime.Seconds()-llmProcessingTimeTaken.Seconds()))
+
 	w.WriteHeader(rec.Code)
+
 	rec.Body.WriteTo(w)
 
 	// log.Printf("Body is %s", rec.Body)

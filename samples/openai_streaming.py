@@ -7,6 +7,7 @@ completion = client.chat.completions.create(
     {"role": "system", "content": "You are a helpful assistant."},
     {"role": "user", "content": "Print numbers 1 to 10 seperated by new line!"}
   ],
+  seed=1234,
   stream=True
 )
 
